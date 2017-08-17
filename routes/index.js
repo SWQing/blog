@@ -1,5 +1,5 @@
 module.exports = function (app) {
-    //首页
+    //首页的路由
     app.get('/', function (req, res) {
         res.render('index', {
             title:'首页'
@@ -28,7 +28,7 @@ module.exports = function (app) {
     //发表页面
     app.get('/post', function (req, res) {
         res.render('post', {
-            title:'发表'
+            title:'发布文章'
         })
     })
     //发表行为
