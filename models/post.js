@@ -2,6 +2,8 @@
  * Created by su on 2017/8/18.
  */
 var mongo = require('./db');
+//引入markdown
+var markdown = require('markdown').markdown;
 //name 发表文章的用户名
 //title 文章标题
 //post 文章内容
@@ -58,7 +60,7 @@ Post.prototype.save = function (callback) {
     })
 }
 //读取文章列表
-Post.get = function (name, callback) {
+Post.getAll = function (name, callback) {
     mongo.open(function (err, db) {
         if(err) {
             return callback(err);
@@ -77,7 +79,39 @@ Post.get = function (name, callback) {
                 if(err) {
                     return callback(err);
                 }
+                docs.forEach(function (doc) {
+                    doc.post = markdown.toHTML(doc.post);
+                })
                 return callback(null, docs);
+            })
+        })
+    })
+}
+//查询一篇文章
+Post.getOne = function (name, minute, title, callback) {
+    //1.打开数据库
+    mongo.open(function (err, db) {
+        if(err) {
+            return callback(err);
+        }
+        //2.读取post集合
+        db.collection('posts', function (err, collection) {
+            if(err) {
+                mongo.close();
+                return callback(err);
+            }
+            collection.findOne({
+                "name": name,
+                "time.minute": minute,
+                "title": title
+            },function (err, doc) {
+                mongo.close();
+                if(err) {
+                    return callback(err);
+                }
+                //将文章内容进行markdown格式的解析
+                doc.post = markdown.toHTML(doc.post);
+                callback(null, doc);
             })
         })
     })
