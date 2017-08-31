@@ -4,6 +4,8 @@ var crypto = require('crypto');
 var User = require('../models/user');
 //Post对象操作类
 var Post = require('../models/post');
+//Comment对象操作类
+var Comment = require('../models/comment');
 //引入multer插件
 var multer = require('multer');
 //配置一下multer的参数
@@ -227,6 +229,67 @@ module.exports = function (app) {
                 error: req.flash('error').toString(),
                 post: post
             })
+        })
+    })
+    //编辑页面
+    app.get('/edit/:name/:minute/:title', checkLogin, function (req, res) {
+        var currentUser = req.session.user;//session保存的是登陆的用户信息
+        Post.edit(req.params.name, req.params.minute, req.params.title, function (err, post) {
+            if(err) {
+                req.flash('error', err);
+                return res.redirect('back');
+            }
+            res.render('edit', {
+                title: post.title,
+                user: req.session.user,
+                success: req.flash('success').toString(),
+                error: req.flash('error').toString(),
+                post: post
+            })
+        })
+    })
+    //编辑行为
+    app.post('/edit/:name/:minute/:title', checkLogin, function (req, res) {
+        Post.update(req.params.name, req.params.minute, req.params.title, req.body.post, function (err) {
+            var url = encodeURI('/u/' + req.params.name + '/' + req.params.minute + '/' + req.params.title);
+            if(err) {
+                req.flash('error', err);
+                return res.redirect(url);
+            }
+            req.flash('success', '编辑成功');
+            return res.redirect(url);
+        })
+    })
+    //删除行为
+    app.get('/remove/:name/:minute/:title', function (req, res) {
+        var currentUser = req.session.user;
+        Post.remove(currentUser.name, req.params.minute, req.params.title, function (err) {
+            if(err) {
+                req.flash('error', err);
+                return res.redirect('back');
+            }
+            req.flash('success', '删除成功');
+            return res.redirect('/');
+        })
+    })
+    //留言的功能
+    app.post('/comment/:name/:minute/:title', function (req, res) {
+        var date = new Date();
+        var time = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " +
+            date.getHours() + ":" + (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes());
+        var comment = {
+            name: req.body.name,
+            time: time,
+            content: req.body.content
+        }
+        var newComment = new Comment(req.params.name, req.params.minute, req.params.title, comment);
+        newComment.save(function (err) {
+            if(err) {
+                req.flash('error', err);
+                return res.redirect('back');
+            }
+            req.flash('success', '留言成功');
+            res.redirect('back');
         })
     })
 }
