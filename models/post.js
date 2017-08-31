@@ -204,3 +204,30 @@ Post.remove = function (name, minute, title, callback) {
         })
     })
 }
+//存档的方法
+Post.getArchive = function (callback) {
+    mongo.open(function (err, db) {
+        if(err) {
+            return callback(err);
+        }
+        db.collection('posts', function (err, collection) {
+            if(err) {
+                mongo.close();
+                return callback(err);
+            }
+            collection.find({}, {
+                "name": 1,
+                "time": 1,
+                "title": 1
+            }).sort({
+                time: -1
+            }).toArray(function (err, docs) {
+                mongo.close();
+                if(err) {
+                    return callback(err);
+                }
+                callback(null, docs);
+            })
+        })
+    })
+}

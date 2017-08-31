@@ -308,4 +308,20 @@ module.exports = function (app) {
             res.redirect('back');
         })
     })
+    //存档的页面
+    app.get('/archive', function (req, res) {
+        Post.getArchive(function (err, posts) {
+            if(err) {
+                req.flash('error', err);
+                return res.redirect('/');
+            }
+            res.render('archive', {
+                title: '存档页面',
+                user: req.session.user,
+                success: req.flash('success').toString(),
+                error: req.flash('error').toString(),
+                posts: posts
+            })
+        })
+    })
 }
