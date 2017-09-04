@@ -16,14 +16,13 @@ var storage = multer.diskStorage({
     },
     //文件的命名
     filename: function (req, file, cb) {
-        cb(null, file.originalname)
+        cb(null, file.fieldname + '.png')
     }
 })
 //应用此配置
 var upload = multer({
     storage: storage
 })
-
 function checkNotLogin(req, res, next) {
     if(req.session.user) {
         //用户已经登录了
@@ -55,10 +54,11 @@ module.exports = function (app) {
                 page: page,
                 //总条数
                 total: total,
+                pagetotal: Math.ceil(total / 4),
                 //判断是否为第一页
                 isFirstPage: (page - 1) == 0,
                 //判断是否是最后一页
-                isLastPage: ((page - 1) * 10 + posts.length) == total,
+                isLastPage: ((page - 1) * 4 + posts.length) == total,
                 user:req.session.user,//注册成功的用户信息
                 success:req.flash('success').toString(),//成功的提示信息
                 error:req.flash('error').toString()//失败的提示信息
@@ -168,7 +168,8 @@ module.exports = function (app) {
     app.post('/post', checkLogin, function (req, res) {
         //当前登录的用户信息
         var currentUser = req.session.user;
-        var post = new Post(currentUser.name, req.body.title, req.body.post);
+        var tags = [req.body.tag1, req.body.tag2, req.body.tag3];
+        var post = new Post(currentUser.name, req.body.title, tags, req.body.post);
 
         post.save(function (err) {
             if(err) {
@@ -188,7 +189,7 @@ module.exports = function (app) {
     //文件上传的页面
     app.get('/upload', checkLogin, function (req, res) {
         res.render('upload', {
-            title: '文件上传',
+            title: '头像上传',
             user: req.session.user,
             success: req.flash('success').toString(),
             error: req.flash('error').toString()
@@ -222,8 +223,9 @@ module.exports = function (app) {
                     user: req.session.user,
                     page: page,
                     total: total,
+                    pagetotal: Math.ceil(total / 4),
                     isFirstPage: (page - 1) == 0,
-                    isLastPage: ((page - 1) * 10 + posts.length) == total,
+                    isLastPage: ((page - 1) * 4 + posts.length) == total,
                     success: req.flash('success').toString(),
                     error: req.flash('error').toString(),
                     posts: posts
@@ -317,6 +319,54 @@ module.exports = function (app) {
             }
             res.render('archive', {
                 title: '存档页面',
+                user: req.session.user,
+                success: req.flash('success').toString(),
+                error: req.flash('error').toString(),
+                posts: posts
+            })
+        })
+    })
+    //所有的标签页面
+    app.get('/tags',  function (req, res) {
+        Post.getTags(function (err, tags) {
+            if(err) {
+                req.flash('error', err);
+                return res.redirect('/');
+            }
+            res.render('tags', {
+                title: '标签',
+                user: req.session.user,
+                tags: tags,
+                success: req.flash('success').toString(),
+                error: req.flash('error').toString()
+            })
+        })
+    })
+    //标签对应的文章列表
+    app.get('/tags/:tag', function (req, res) {
+        Post.getTag(req.params.tag, function (err, posts) {
+            if(err) {
+                req.flash('error', err);
+                return res.redirect('/');
+            }
+            res.render('tag', {
+                title: 'Tag:' + req.params.tag,
+                user: req.session.user,
+                success: req.flash('success').toString(),
+                error: req.flash('error').toString(),
+                posts: posts
+            })
+        })
+    })
+    //搜索的页面
+    app.get('/search', function (req, res) {
+        Post.search(req.query.keyword, function (err, posts) {
+            if(err) {
+                req.flash('error', err);
+                return res.redirect('/');
+            }
+            res.render('search', {
+                title: req.query.search,
                 user: req.session.user,
                 success: req.flash('success').toString(),
                 error: req.flash('error').toString(),

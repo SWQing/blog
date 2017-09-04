@@ -7,9 +7,10 @@ var markdown = require('markdown').markdown;
 //name 发表文章的用户名
 //title 文章标题
 //post 文章内容
-function Post(name, title, post) {
+function Post(name, title, tags, post) {
     this.name = name;
     this.title = title;
+    this.tags = tags;
     this.post = post;
 }
 module.exports = Post;
@@ -37,9 +38,12 @@ Post.prototype.save = function (callback) {
         name: this.name,
         time: time,
         title: this.title,
+        tags: this.tags,
         post: this.post,
         //增加一个留言的字段
-        comments: []
+        comments: [],
+        //增加一个留言的计数
+        pv: 0
     }
     //打开数据库
     mongo.open(function (err, db) {
@@ -78,8 +82,8 @@ Post.getTen = function (name, page, callback) {
             }
             collection.count(query, function (err, total) {
                 collection.find(query, {
-                    skip: (page - 1) * 10,
-                    limit: 10
+                    skip: (page - 1) * 4,
+                    limit: 4
                 }).sort({time: -1}).toArray(function (err, docs) {
                     mongo.close();
                     if(err) {
@@ -112,9 +116,24 @@ Post.getOne = function (name, minute, title, callback) {
                 "time.minute": minute,
                 "title": title
             },function (err, doc) {
-                mongo.close();
                 if(err) {
+                    mongo.close();
                     return callback(err);
+                }
+                //当用户查询文章时, 让它的pv字段+1
+                if(doc) {
+                    collection.update({
+                        "name": name,
+                        "time.minute": minute,
+                        "title": title
+                    }, {
+                        $inc: {"pv": 1}
+                    }, function (err) {
+                        mongo.close();
+                        if(err) {
+                            return callback(err);
+                        }
+                    })
                 }
                 //将文章内容进行markdown格式的解析
                 doc.post = markdown.toHTML(doc.post);
@@ -216,6 +235,86 @@ Post.getArchive = function (callback) {
                 return callback(err);
             }
             collection.find({}, {
+                "name": 1,
+                "time": 1,
+                "title": 1
+            }).sort({
+                time: -1
+            }).toArray(function (err, docs) {
+                mongo.close();
+                if(err) {
+                    return callback(err);
+                }
+                callback(null, docs);
+            })
+        })
+    })
+}
+//返回所有的标签
+Post.getTags = function (callback) {
+    mongo.open(function (err, db) {
+        if(err) {
+            return callback(err);
+        }
+        db.collection('posts', function (err, collection) {
+            if(err) {
+                mongo.close();
+                return callback(err);
+            }
+            collection.distinct('tags', function (err, tags) {
+                mongo.close();
+                if(err) {
+                    return callback(err);
+                }
+                callback(null, tags);
+            })
+        })
+    })
+}
+//返回一个标签对应的所有文章
+Post.getTag = function (tag, callback) {
+    mongo.open(function (err, db) {
+        if(err) {
+            return callback(err);
+        }
+        db.collection('posts', function (err, collection) {
+            if(err) {
+                mongo.close();
+                return callback(err);
+            }
+            collection.find({
+                "tags":tag
+            }, {
+                "name": 1,
+                "time": 1,
+                "title": 1
+            }).sort({
+                time: -1
+            }).toArray(function (err, docs) {
+                mongo.close();
+                if(err) {
+                    return callback(err);
+                }
+                callback(null, docs);
+            })
+        })
+    })
+}
+//搜索
+Post.search = function (keyword, callback) {
+    mongo.open(function (err, db) {
+        if(err) {
+            return callback(err);
+        }
+        db.collection('posts', function (err, collection) {
+            if(err) {
+                mongo.close();
+                return callback(err);
+            }
+            var reg = new RegExp(keyword, 'i');
+            collection.find({
+                "title": reg
+            }, {
                 "name": 1,
                 "time": 1,
                 "title": 1

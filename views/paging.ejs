@@ -1,13 +1,46 @@
 <br>
 <div>
-    <% if(!isFirstPage) { %>
-        <span class="prepage">
+    <span class="prepage">
+        <!--判断当前页数是否是第一页-->
+        <% if(isFirstPage) { %>
+            <a style="border: none;color: #999;cursor: default;" onmousemove="this.style.background = '#fff'">上一页</a>
+        <% } else { %>
+            <!--首页-->
+            <a href="?page=<%= 1 %>">首页</a>
             <a href="?page=<%= page - 1 %>">上一页</a>
-        </span>
-    <% } %>
-    <% if(!isLastPage) { %>
-        <span class="nextpage">
+        <% } %>
+
+        <!--当总页数 >= 5 时-->
+        <% if(pagetotal >= 5) { %>
+            <!--当前页数是前两页时, 页码不变-->
+            <% if( page < 3) { %>
+                <% loop(1, 5)%>
+            <!--当前页数不是前两页和最后两页时, 页码改变-->
+            <% } else if( page >= 3 && page <= pagetotal - 2) { %>
+                <% loop(page - 2, page + 2)%>
+            <!--当前页数是后最两页时, 页码不变-->
+            <% } else { %>
+                <% loop(pagetotal - 4, pagetotal)%>
+            <% } %>
+        <!--当总页数 < 5 时-->
+        <% } else if(pagetotal < 5) { %>
+            <% loop(1, pagetotal)%>
+        <% } %>
+
+        <!--循环函数, 用来循环输出页码-->
+        <% function loop(start, end) { %>
+            <% for(var i = start; i <= end; i ++) { %>
+                <a class="one" href="?page=<%= i %>"><%= i %></a>
+            <% } %>
+        <% } %>
+
+        <!--判断当前页数是否为最后一页-->
+        <% if(isLastPage) { %>
+            <a style="border: none;color: #999;cursor: default" onmousemove="this.style.background = '#fff'">下一页</a>
+        <% } else { %>
             <a href="?page=<%= page + 1 %>">下一页</a>
-        </span>
-    <% } %>
+            <!--尾页-->
+            <a href="?page=<%= pagetotal %>">尾页</a>
+        <% } %>
+    </span>
 </div>

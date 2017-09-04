@@ -6,20 +6,33 @@
     <link rel="stylesheet" href="/stylesheets/style.css">
 </head>
 <body>
+    <div id="logo">
+        <img src="../images/field1.png" alt="">
+    </div>
+    <div class="logo"></div>
 <header>
     <h1><%= title %></h1>
+    <span class="ser">
+        <form method="get" action="/search">
+            <input class="search" type="text" name="keyword" placeholder="SEARCH">
+        </form>
+    </span>
+    <div style="clear:both;"></div>
 </header>
 <nav>
     <span><a href="/">首页</a></span>
     <% if(user) { %>
     <span><a href="/archive">存档</a></span>
+    <span><a href="/tags">标签</a></span>
     <span><a href="/post">发表</a></span>
     <span><a href="/upload">上传</a></span>
     <span><a href="/logout">退出</a></span>
     <% } else { %>
     <span><a href="/login">登录</a></span>
     <span><a href="/reg">注册</a></span>
+
     <% } %>
+
 </nav>
 <article>
 <% if(success) { %>
